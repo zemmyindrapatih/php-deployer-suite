@@ -101,6 +101,11 @@ php sender/deploy.php --repo=/path/to/project --from=<git-ref> --to=<git-ref> --
 | `--to` | Ending git ref |
 | `--out` | Output zip path |
 | `--chunk-size` | Optional, bytes (default `2097152` / 2MB). Recorded as a hint in the manifest; smaller chunks are safer on flaky connections, larger chunks mean fewer requests. |
+| `--path` | Optional, only diff changes under this subtree (e.g. `Backend`) — useful for monorepos. |
+| `--strip-prefix` | Optional, removes this prefix from packaged paths (e.g. `Backend/app/index.php` → `app/index.php`). |
+| `--dest-prefix` | Optional, prepends this folder to every destination path (applied after `--strip-prefix`), to land files under a subfolder on the server instead of the doc root. |
+
+See [`docs/USAGE.md`](docs/USAGE.md#3-packaging-a-deploy) for monorepo/subfolder examples using `--path`, `--strip-prefix`, and `--dest-prefix` together.
 
 ### 2. Deploy via the web UI
 
