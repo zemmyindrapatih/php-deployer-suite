@@ -77,6 +77,28 @@ php sender/deploy.php --repo=/path/to/monorepo \
 Both flags are optional; omit them for the default behavior (full-repo diff,
 paths as-is).
 
+### Deploying into a chosen subfolder (`--dest-prefix`)
+
+If the server's document root shouldn't have Backend's files dumped directly
+into it (e.g. you don't want `app/` and `vendor/` sitting next to your own
+`index.php`), add `--dest-prefix` to land them under a folder of your
+choosing instead:
+
+```bash
+php sender/deploy.php --repo=/path/to/monorepo \
+  --from=<git-ref> --to=<git-ref> \
+  --path=Backend --strip-prefix=Backend --dest-prefix=api \
+  --out=backend-deploy.zip
+```
+
+- `--dest-prefix=<folder>` - prepends this folder to every destination path
+  *after* `--strip-prefix` has been applied, so `Backend/app/index.php`
+  becomes `api/app/index.php` in the zip and lands at
+  `<web_root>/api/app/index.php` on the server.
+
+`--dest-prefix` can be used without `--strip-prefix` too (it just prepends
+to whatever paths the diff produced).
+
 ## 4. Deploying
 
 Open the uploaded receiver URL in a browser, log in with your password, then

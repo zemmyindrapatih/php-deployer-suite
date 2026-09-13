@@ -117,4 +117,77 @@ final class PathMapperTest extends TestCase
         $this->assertContains('updated.php', array_keys($result['map']));
         $this->assertContains('removed.php', array_keys($result['map']));
     }
+
+    public function testAddPrefixToAddedFiles(): void
+    {
+        $diff = [
+            'add' => ['app.php', 'config.php'],
+            'modify' => [],
+            'delete' => [],
+        ];
+
+        $result = PathMapper::addPrefix($diff, 'api');
+
+        $this->assertSame(['api/app.php', 'api/config.php'], $result['add']);
+        $this->assertSame([], $result['modify']);
+        $this->assertSame([], $result['delete']);
+        $this->assertSame(['api/app.php' => 'app.php', 'api/config.php' => 'config.php'], $result['map']);
+    }
+
+    public function testAddPrefixToModifiedAndDeletedFiles(): void
+    {
+        $diff = [
+            'add' => [],
+            'modify' => ['api.php'],
+            'delete' => ['old.php'],
+        ];
+
+        $result = PathMapper::addPrefix($diff, 'api');
+
+        $this->assertSame(['api/api.php'], $result['modify']);
+        $this->assertSame(['api/old.php'], $result['delete']);
+    }
+
+    public function testAddPrefixHandlesNestedDirectories(): void
+    {
+        $diff = [
+            'add' => ['app/Models/User.php'],
+            'modify' => [],
+            'delete' => [],
+        ];
+
+        $result = PathMapper::addPrefix($diff, 'api');
+
+        $this->assertSame(['api/app/Models/User.php'], $result['add']);
+        $this->assertSame(['api/app/Models/User.php' => 'app/Models/User.php'], $result['map']);
+    }
+
+    public function testAddPrefixHandlesTrailingSlash(): void
+    {
+        $diff = [
+            'add' => ['app.php'],
+            'modify' => [],
+            'delete' => [],
+        ];
+
+        $result = PathMapper::addPrefix($diff, 'api/');
+
+        $this->assertSame(['api/app.php'], $result['add']);
+        $this->assertSame(['api/app.php' => 'app.php'], $result['map']);
+    }
+
+    public function testAddPrefixReKeysAnExistingSourceMap(): void
+    {
+        $diff = [
+            'add' => ['app.php'],
+            'modify' => [],
+            'delete' => [],
+        ];
+        $sourceMap = ['app.php' => 'Backend/app.php'];
+
+        $result = PathMapper::addPrefix($diff, 'api', $sourceMap);
+
+        $this->assertSame(['api/app.php'], $result['add']);
+        $this->assertSame(['api/app.php' => 'Backend/app.php'], $result['map']);
+    }
 }

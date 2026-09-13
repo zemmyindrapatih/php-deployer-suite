@@ -17,6 +17,7 @@ function parseArgs(array $argv): array
         'chunk-size' => 2 * 1024 * 1024,
         'path' => null,
         'strip-prefix' => null,
+        'dest-prefix' => null,
     ];
 
     foreach (array_slice($argv, 1) as $arg) {
@@ -37,7 +38,7 @@ function parseArgs(array $argv): array
 $opts = parseArgs($argv);
 
 if (!$opts['from'] || !$opts['to'] || !$opts['out']) {
-    fwrite(STDERR, "Usage: php deploy.php --from=<git-ref> --to=<git-ref> --out=<file.zip> [--chunk-size=<bytes>] [--repo=<path>] [--path=<pathspec>] [--strip-prefix=<prefix>]\n");
+    fwrite(STDERR, "Usage: php deploy.php --from=<git-ref> --to=<git-ref> --out=<file.zip> [--chunk-size=<bytes>] [--repo=<path>] [--path=<pathspec>] [--strip-prefix=<prefix>] [--dest-prefix=<folder>]\n");
     exit(1);
 }
 
@@ -49,6 +50,12 @@ if ($opts['strip-prefix']) {
     $stripped = PathMapper::stripPrefix($diff, $opts['strip-prefix']);
     $diff = ['add' => $stripped['add'], 'modify' => $stripped['modify'], 'delete' => $stripped['delete']];
     $pathMap = $stripped['map'];
+}
+
+if ($opts['dest-prefix']) {
+    $prefixed = PathMapper::addPrefix($diff, $opts['dest-prefix'], $pathMap);
+    $diff = ['add' => $prefixed['add'], 'modify' => $prefixed['modify'], 'delete' => $prefixed['delete']];
+    $pathMap = $prefixed['map'];
 }
 
 $builder = new ManifestBuilder($differ);
