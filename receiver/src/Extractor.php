@@ -47,13 +47,13 @@ class Extractor
     {
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = $zip->getNameIndex($i);
-            if ($this->isUnsafePath($name)) {
+            if (self::isUnsafePath($name)) {
                 throw new RuntimeException("Unsafe path in zip entry: {$name}");
             }
         }
     }
 
-    public function isUnsafePath(string $path): bool
+    public static function isUnsafePath(string $path): bool
     {
         $normalized = str_replace('\\', '/', $path);
 

@@ -36,6 +36,10 @@ class Rollback
         $restored = [];
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = $zip->getNameIndex($i);
+            if (Extractor::isUnsafePath($name)) {
+                $zip->close();
+                throw new RuntimeException("Unsafe path in backup zip: {$name}");
+            }
             $targetFile = $this->webRoot . '/' . $name;
             $targetDir = dirname($targetFile);
             if (!is_dir($targetDir)) {

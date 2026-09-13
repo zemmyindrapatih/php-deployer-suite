@@ -2,6 +2,7 @@
 
 namespace Deployer\Receiver;
 
+use RuntimeException;
 use ZipArchive;
 
 class BackupManager
@@ -28,6 +29,13 @@ class BackupManager
     public function backup(array $replacePaths, array $deletePaths): ?string
     {
         $candidates = array_unique(array_merge($replacePaths, $deletePaths));
+
+        foreach ($candidates as $path) {
+            if (Extractor::isUnsafePath($path)) {
+                throw new RuntimeException("Unsafe manifest path: {$path}");
+            }
+        }
+
         $existing = array_values(array_filter($candidates, function (string $path) {
             return is_file($this->targetPath($path));
         }));

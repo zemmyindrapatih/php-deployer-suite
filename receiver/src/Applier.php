@@ -2,6 +2,8 @@
 
 namespace Deployer\Receiver;
 
+use RuntimeException;
+
 class Applier
 {
     private string $webRoot;
@@ -22,6 +24,10 @@ class Applier
     {
         $type = $entry['type'];
         $path = $entry['path'];
+
+        if (Extractor::isUnsafePath($path)) {
+            throw new RuntimeException("Unsafe manifest path: {$path}");
+        }
 
         if ($type === 'add' || $type === 'replace') {
             $sourceFile = rtrim($entry['source_dir'], '/\\') . '/' . $path;

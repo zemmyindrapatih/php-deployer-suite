@@ -2,6 +2,8 @@
 
 namespace Deployer\Sender;
 
+use RuntimeException;
+
 class ManifestBuilder
 {
     private GitDiffer $differ;
@@ -22,6 +24,12 @@ class ManifestBuilder
      */
     public function build(string $fromRef, string $toRef, array $classifiedDiff, int $chunkSize, array $pathMap = []): array
     {
+        foreach (array_merge($classifiedDiff['add'], $classifiedDiff['modify'], $classifiedDiff['delete']) as $path) {
+            if (self::isUnsafePath($path)) {
+                throw new RuntimeException("Refusing to build manifest: unsafe destination path '{$path}'");
+            }
+        }
+
         $add = [];
         foreach ($classifiedDiff['add'] as $path) {
             $srcPath = $pathMap[$path] ?? $path;
@@ -46,5 +54,29 @@ class ManifestBuilder
             'replace' => $replace,
             'delete' => array_values($classifiedDiff['delete']),
         ];
+    }
+
+    /**
+     * Destination path must stay a relative path inside the deploy target;
+     * mirrors Deployer\Receiver\Extractor::isUnsafePath so a bad --dest-prefix
+     * or path mapping is caught here rather than smuggled into the zip/manifest.
+     */
+    private static function isUnsafePath(string $path): bool
+    {
+        $normalized = str_replace('\\', '/', $path);
+
+        if ($normalized === '' || $normalized[0] === '/') {
+            return true;
+        }
+
+        if (preg_match('#(^|/)\.\.(/|$)#', $normalized)) {
+            return true;
+        }
+
+        if (preg_match('/^[A-Za-z]:/', $normalized)) {
+            return true;
+        }
+
+        return false;
     }
 }
