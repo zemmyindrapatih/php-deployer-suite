@@ -4,6 +4,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use Deployer\Sender\GitDiffer;
 use Deployer\Sender\ManifestBuilder;
+use Deployer\Sender\PathMapper;
 use Deployer\Sender\ZipPackager;
 
 function parseArgs(array $argv): array
@@ -14,6 +15,8 @@ function parseArgs(array $argv): array
         'to' => null,
         'out' => null,
         'chunk-size' => 2 * 1024 * 1024,
+        'path' => null,
+        'strip-prefix' => null,
     ];
 
     foreach (array_slice($argv, 1) as $arg) {
@@ -34,18 +37,25 @@ function parseArgs(array $argv): array
 $opts = parseArgs($argv);
 
 if (!$opts['from'] || !$opts['to'] || !$opts['out']) {
-    fwrite(STDERR, "Usage: php deploy.php --from=<git-ref> --to=<git-ref> --out=<file.zip> [--chunk-size=<bytes>] [--repo=<path>]\n");
+    fwrite(STDERR, "Usage: php deploy.php --from=<git-ref> --to=<git-ref> --out=<file.zip> [--chunk-size=<bytes>] [--repo=<path>] [--path=<pathspec>] [--strip-prefix=<prefix>]\n");
     exit(1);
 }
 
 $differ = new GitDiffer($opts['repo']);
-$diff = $differ->diff($opts['from'], $opts['to']);
+$diff = $differ->diff($opts['from'], $opts['to'], $opts['path']);
+
+$pathMap = [];
+if ($opts['strip-prefix']) {
+    $stripped = PathMapper::stripPrefix($diff, $opts['strip-prefix']);
+    $diff = ['add' => $stripped['add'], 'modify' => $stripped['modify'], 'delete' => $stripped['delete']];
+    $pathMap = $stripped['map'];
+}
 
 $builder = new ManifestBuilder($differ);
-$manifest = $builder->build($opts['from'], $opts['to'], $diff, $opts['chunk-size']);
+$manifest = $builder->build($opts['from'], $opts['to'], $diff, $opts['chunk-size'], $pathMap);
 
 $packager = new ZipPackager($differ);
-$packager->package($manifest, $opts['out']);
+$packager->package($manifest, $opts['out'], $pathMap);
 
 printf(
     "Packaged %d added, %d replaced, %d deleted -> %s\n",

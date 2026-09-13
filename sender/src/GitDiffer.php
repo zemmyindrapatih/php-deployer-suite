@@ -18,9 +18,14 @@ class GitDiffer
      * Returns ['add' => [paths], 'modify' => [paths], 'delete' => [paths]]
      * Renames are treated as delete (old path) + add (new path).
      */
-    public function diff(string $fromRef, string $toRef): array
+    public function diff(string $fromRef, string $toRef, ?string $pathspec = null): array
     {
-        $output = $this->runGit(['diff', '--name-status', '-M', $fromRef, $toRef]);
+        $args = ['diff', '--name-status', '-M', $fromRef, $toRef];
+        if ($pathspec !== null) {
+            $args[] = '--';
+            $args[] = $pathspec;
+        }
+        $output = $this->runGit($args);
 
         $result = ['add' => [], 'modify' => [], 'delete' => []];
 

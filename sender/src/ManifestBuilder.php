@@ -20,17 +20,19 @@ class ManifestBuilder
      *   delete: array<int,string>
      * }
      */
-    public function build(string $fromRef, string $toRef, array $classifiedDiff, int $chunkSize): array
+    public function build(string $fromRef, string $toRef, array $classifiedDiff, int $chunkSize, array $pathMap = []): array
     {
         $add = [];
         foreach ($classifiedDiff['add'] as $path) {
-            $content = $this->differ->readFileAtRef($toRef, $path);
+            $srcPath = $pathMap[$path] ?? $path;
+            $content = $this->differ->readFileAtRef($toRef, $srcPath);
             $add[] = ['path' => $path, 'sha256' => hash('sha256', $content)];
         }
 
         $replace = [];
         foreach ($classifiedDiff['modify'] as $path) {
-            $content = $this->differ->readFileAtRef($toRef, $path);
+            $srcPath = $pathMap[$path] ?? $path;
+            $content = $this->differ->readFileAtRef($toRef, $srcPath);
             $replace[] = ['path' => $path, 'sha256' => hash('sha256', $content)];
         }
 

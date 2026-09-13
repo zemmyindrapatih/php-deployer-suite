@@ -14,7 +14,7 @@ class ZipPackager
         $this->differ = $differ;
     }
 
-    public function package(array $manifest, string $outputPath): void
+    public function package(array $manifest, string $outputPath, array $pathMap = []): void
     {
         $zip = new ZipArchive();
         $result = $zip->open($outputPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
@@ -27,7 +27,8 @@ class ZipPackager
         $toRef = $manifest['to_ref'];
 
         foreach (array_merge($manifest['add'], $manifest['replace']) as $entry) {
-            $content = $this->differ->readFileAtRef($toRef, $entry['path']);
+            $srcPath = $pathMap[$entry['path']] ?? $entry['path'];
+            $content = $this->differ->readFileAtRef($toRef, $srcPath);
             $zip->addFromString('files/' . $entry['path'], $content);
         }
 

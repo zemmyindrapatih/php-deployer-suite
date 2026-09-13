@@ -117,6 +117,43 @@ final class GitDifferTest extends TestCase
         $this->assertSame('exact-content-123', $content);
     }
 
+    public function testPathspecFiltersChangesToSubdirectory(): void
+    {
+        mkdir($this->repoDir . '/Backend');
+        mkdir($this->repoDir . '/Frontend');
+        $this->commitFile('Backend/app.php', 'backend');
+        $this->commitFile('Frontend/index.html', 'frontend');
+        $from = $this->currentRef();
+
+        $this->commitFile('Backend/app.php', 'backend-v2');
+        $this->commitFile('Frontend/index.html', 'frontend-v2');
+        $to = $this->currentRef();
+
+        $diff = (new GitDiffer($this->repoDir))->diff($from, $to, 'Backend');
+
+        $this->assertSame(['Backend/app.php'], $diff['modify']);
+        $this->assertSame([], $diff['add']);
+        $this->assertSame([], $diff['delete']);
+    }
+
+    public function testPathspecIncludesAddAndDeleteInSubdirectory(): void
+    {
+        mkdir($this->repoDir . '/Backend', 0755, true);
+        $this->commitFile('Backend/keep.php', 'keep');
+        $from = $this->currentRef();
+
+        $this->commitFile('Backend/new.php', 'new');
+        unlink($this->repoDir . '/Backend/keep.php');
+        $this->git(['add', '-A']);
+        $this->git(['commit', '-q', '-m', 'add and delete']);
+        $to = $this->currentRef();
+
+        $diff = (new GitDiffer($this->repoDir))->diff($from, $to, 'Backend');
+
+        $this->assertSame(['Backend/new.php'], $diff['add']);
+        $this->assertSame(['Backend/keep.php'], $diff['delete']);
+    }
+
     private function commitFile(string $name, string $content): void
     {
         file_put_contents($this->repoDir . '/' . $name, $content);
