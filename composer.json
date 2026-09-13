@@ -1,0 +1,29 @@
+{
+    "name": "zemmy/deployer",
+    "description": "Zip-based deployment tool for low-cost cPanel hosting without SSH",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "ext-zip": "*",
+        "ext-json": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Deployer\\Sender\\": "sender/src/",
+            "Deployer\\Receiver\\": "receiver/src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Deployer\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test:coverage": "phpunit --coverage-text",
+        "build:receiver": "php receiver/build.php"
+    }
+}

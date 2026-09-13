@@ -1,0 +1,93 @@
+# Usage
+
+## 1. One-time setup
+
+```bash
+composer install
+```
+
+## 2. Configure and build the receiver
+
+The receiver's real source lives in `receiver/src/*.php` (testable classes).
+It gets built into a single dependency-free file — that build output is the
+*only* file you ever upload to cPanel.
+
+```bash
+php receiver/build.php
+```
+
+This produces `receiver/dist/deploy-receiver.php`. Open it and fill in the
+`CONFIGURATION` block near the top:
+
+```bash
+php -r "echo bin2hex(random_bytes(32));"        # your API token - save it somewhere safe
+php -r "echo hash('sha256', 'YOUR_TOKEN');"     # -> TOKEN_HASH
+php -r "echo password_hash('YOUR_PASSWORD', PASSWORD_DEFAULT);"  # -> PASSWORD_HASH
+```
+
+Edit the constants at the top of `receiver/dist/deploy-receiver.php`:
+
+```php
+const TOKEN_HASH = '...';
+const PASSWORD_HASH = '...';
+```
+
+Then upload that one file to your cPanel public directory (e.g. via File
+Manager or FTP, a single small upload). Optionally rename it to something
+unguessable (e.g. `deploy-x7f2a9.php`) for extra obscurity.
+
+**Recommended:** place `.deployer-work`, `.deployer-backups`, and
+`.deployer-log.json` outside the public web root, or protect them with a
+`.htaccess` "Deny from all" if they must stay inside it — these hold deploy
+history and file backups you don't want publicly downloadable.
+
+## 3. Packaging a deploy
+
+From your project's git repository:
+
+```bash
+php sender/deploy.php --repo=/path/to/project --from=<git-ref> --to=<git-ref> --out=deploy.zip --chunk-size=2097152
+```
+
+- `--from` / `--to` - any git refs (tags, branches, commit SHAs).
+- `--out` - where to write the resulting zip.
+- `--chunk-size` - optional, bytes (default 2MB). This is a hint recorded in
+  the manifest; it does not change how the browser chunks the upload (that's
+  fixed client-side), but documents what the packager assumed.
+
+## 4. Deploying
+
+Open the uploaded receiver URL in a browser, log in with your password, then
+drag and drop the zip (or use the file picker). The page will:
+
+1. Upload the zip in chunks (works around `upload_max_filesize` limits).
+2. Extract it and show a summary of pending changes.
+3. Apply each change one at a time, showing progress, backing up any file
+   about to be replaced or deleted first.
+4. Show a final summary, including any hash mismatches.
+
+Non-browser / scripted deploys can call the same JSON API directly with
+`X-Deploy-Token: <your raw token>` instead of a session cookie.
+
+## 5. Rolling back
+
+The deploy history table lists past deploys. Click "Rollback" next to any
+entry that has a backup (only deploys that replaced or deleted at least one
+existing file create one) to restore those files to their pre-deploy state.
+
+**Limitation:** rollback restores replaced/deleted files from the backup. It
+does *not* remove files that were newly added by the deploy being rolled
+back — clean those up manually if needed.
+
+## Running the tests
+
+```bash
+composer test              # PHPUnit: unit tests + HTTP integration tests
+composer test:coverage     # same, with a coverage report (requires Xdebug or PCOV)
+npm install && npx playwright install chromium   # one-time
+npm run test:e2e           # Playwright browser tests against the built receiver
+```
+
+The integration and E2E suites both run against the actual built
+`receiver/dist/deploy-receiver.php`, so run `php receiver/build.php` first
+if you've changed anything under `receiver/src/`.

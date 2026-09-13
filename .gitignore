@@ -1,0 +1,7 @@
+/vendor/
+/node_modules/
+/receiver/dist/
+/tests/e2e/.fixture/
+/test-results/
+/playwright-report/
+.phpunit.result.cache
