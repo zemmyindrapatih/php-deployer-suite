@@ -55,6 +55,28 @@ php sender/deploy.php --repo=/path/to/project --from=<git-ref> --to=<git-ref> --
   the manifest; it does not change how the browser chunks the upload (that's
   fixed client-side), but documents what the packager assumed.
 
+### Deploying from monorepos
+
+If your project is a monorepo with multiple independent services (e.g.
+`Backend/` and `Frontend/` subdirectories), use `--path` and `--strip-prefix`
+to deploy only one subtree:
+
+```bash
+php sender/deploy.php --repo=/path/to/monorepo \
+  --from=<git-ref> --to=<git-ref> \
+  --path=Backend --strip-prefix=Backend \
+  --out=backend-deploy.zip
+```
+
+- `--path=<pathspec>` - only diff changes under this subtree (e.g. `Backend`);
+  other changes (e.g. `Frontend/`) are ignored.
+- `--strip-prefix=<prefix>` - remove the prefix from paths before packaging,
+  so `Backend/app/index.php` becomes `app/index.php` in the zip (the layout
+  the server expects for its doc root).
+
+Both flags are optional; omit them for the default behavior (full-repo diff,
+paths as-is).
+
 ## 4. Deploying
 
 Open the uploaded receiver URL in a browser, log in with your password, then
